@@ -1,0 +1,25 @@
+{
+  "name": "nvim-in-the-loop",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "bin": {
+    "ai-keymap": "./dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@ai-sdk/openai": "^2.0.58",
+    "ai": "^5.0.83",
+    "gunshi": "^0.26.3"
+  },
+  "scripts": {
+    "dev": "bun run src/cli.ts",
+    "build": "bun build src/cli.ts --outdir dist --target node --packages external && chmod +x dist/cli.js",
+    "test": "bun test"
+  }
+}
