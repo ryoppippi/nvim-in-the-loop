@@ -23,7 +23,10 @@ local defaults = {
   notification_level = vim.log.levels.INFO,
   visualize_cmd = nil, -- override default bun command if provided
   visualize_args = { "--dotfiles", vim.fn.expand("~/.config/nvim") },
-  suggest_args = { "--dotfiles", vim.fn.expand("~/.config/nvim"), "--model", "gpt-5" }, -- default CLI args for AI suggestion run
+  suggest_options = {
+    min_repeat = 3,
+    min_occurrence = 2,
+  },
 }
 
 local config = vim.deepcopy(defaults)
@@ -187,24 +190,15 @@ local function setup_commands()
 
   vim.api.nvim_create_user_command("AiKeymapSuggest", function(params)
     flush_pending()
-    local args = {}
-    if config.visualize_args then
-      vim.list_extend(args, config.visualize_args)
-    end
-    if config.suggest_args then
-      vim.list_extend(args, config.suggest_args)
-    end
-    if params and params.fargs then
-      vim.list_extend(args, params.fargs)
-    end
+    local parsed = suggester.parse_args(params and params.fargs or {})
+    local options = vim.tbl_deep_extend("force", {}, config.suggest_options or {}, parsed or {})
+
     suggester.run({
       log_path = config.log_path,
-      cmd = config.visualize_cmd,
-      extra_args = args,
+      options = options,
     })
   end, {
     nargs = "*",
-    complete = "file",
   })
 
   vim.api.nvim_create_user_command("AiKeymapOpenLog", function()

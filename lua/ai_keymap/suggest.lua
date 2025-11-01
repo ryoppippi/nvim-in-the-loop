@@ -1,49 +1,38 @@
-local M = {}
+local analysis = require("ai_keymap.analysis")
 
-local default_cmd = { "bun", "run", "src/cli.ts" }
+local M = {}
 
 local state = {
   last_suggestion = nil,
 }
 
-local skip_flags = {
-  ["--no-ai"] = true,
-  ["--skip-ai"] = true,
-  ["--format"] = true,
-  ["--log"] = true,
-  ["-l"] = true,
-}
-
-local function sanitize_args(args)
-  if not args then
-    return nil
-  end
-  local filtered = {}
-  local skip_next = false
-  for _, arg in ipairs(args) do
-    if skip_next then
-      skip_next = false
-    elseif skip_flags[arg] then
-      if arg == "--log" or arg == "-l" or arg == "--format" then
-        skip_next = true
+local function parse_args(fargs)
+  local opts = {}
+  local i = 1
+  while i <= #fargs do
+    local arg = fargs[i]
+    if arg == "--min-repeat" then
+      local value = tonumber(fargs[i + 1])
+      if value then
+        opts.min_repeat = value
       end
+      i = i + 2
+    elseif arg == "--min-occurrence" then
+      local value = tonumber(fargs[i + 1])
+      if value then
+        opts.min_occurrence = value
+      end
+      i = i + 2
     else
-      table.insert(filtered, arg)
+      i = i + 1
     end
   end
-  return filtered
-end
-
-local function join_chunks(chunks)
-  if #chunks == 0 then
-    return ""
-  end
-  return table.concat(chunks, "\n")
+  return opts
 end
 
 local function open_preview(suggestion)
   local width = math.floor(vim.o.columns * 0.5)
-  local height = math.floor(vim.o.lines * 0.4)
+  local height = math.floor(vim.o.lines * 0.35)
   local row = math.floor((vim.o.lines - height) / 2 - 1)
   local col = math.floor((vim.o.columns - width) / 2)
 
@@ -60,38 +49,29 @@ local function open_preview(suggestion)
     col = col,
     style = "minimal",
     border = "rounded",
-    title = " AI Keymap Suggestion ",
+    title = " AI Keymap Heuristics ",
     title_pos = "center",
   })
 
   local lines = {
-    string.format("Mode: %s", suggestion.mode),
-    string.format("Trigger: %s", suggestion.lhs),
-    string.format("Sequence: %s", table.concat(suggestion.sequence, " → ")),
+    string.format("モード: %s", suggestion.mode_label),
+    string.format("キー: '%s' (観測回数: %d, 平均: %.1f 回, 最大: %d 回)", suggestion.key, suggestion.occurrences, suggestion.average, suggestion.max_len),
     "",
+    "推奨アクション:",
+    "  - 数字カウントを活用して移動を短縮",
+    "  - 下記マッピングを検討",
+    "",
+    suggestion.mapping_snippet,
+    "",
+    "理由:",
   }
 
-  if suggestion.recommendedMapping and suggestion.recommendedMapping ~= "" then
-    table.insert(lines, "Recommended mapping:")
-    for line in suggestion.recommendedMapping:gmatch("[^\n]+") do
-      table.insert(lines, "  " .. line)
-    end
-    table.insert(lines, "")
-    table.insert(lines, "Press `y` to copy the recommendation to the default register.")
-  else
-    table.insert(lines, "No explicit mapping provided. Consider crafting one around `<leader>` shortcuts.")
-  end
-
-  if suggestion.rationale and suggestion.rationale ~= "" then
-    table.insert(lines, "")
-    table.insert(lines, "Rationale:")
-    for line in suggestion.rationale:gmatch("[^\n]+") do
-      table.insert(lines, "  " .. line)
-    end
+  for line in suggestion.rationale:gmatch("[^\n]+") do
+    table.insert(lines, "  " .. line)
   end
 
   table.insert(lines, "")
-  table.insert(lines, "Press `q` to close.")
+  table.insert(lines, "操作: `y` でマッピングをコピー / `q` で閉じる")
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
@@ -104,48 +84,35 @@ local function open_preview(suggestion)
     end
   end, { buffer = buf, nowait = true, silent = true })
 
-  if suggestion.recommendedMapping and suggestion.recommendedMapping ~= "" then
-    vim.keymap.set("n", "y", function()
-      local snippet = state.last_suggestion and state.last_suggestion.recommendedMapping
-      if not snippet or snippet == "" then
-        return
-      end
-      vim.fn.setreg('"', snippet)
-      if vim.fn.has("clipboard") == 1 then
-        pcall(vim.fn.setreg, "+", snippet)
-      end
-      vim.notify("[ai_keymap] copied mapping to register", vim.log.levels.INFO)
-    end, { buffer = buf, nowait = true, silent = true })
-  end
+  vim.keymap.set("n", "y", function()
+    local snippet = state.last_suggestion and state.last_suggestion.mapping_snippet
+    if not snippet or snippet == "" then
+      return
+    end
+    vim.fn.setreg('"', snippet)
+    if vim.fn.has("clipboard") == 1 then
+      pcall(vim.fn.setreg, "+", snippet)
+    end
+    vim.notify("[ai_keymap] マッピングをレジスタへコピーしました", vim.log.levels.INFO)
+  end, { buffer = buf, nowait = true, silent = true })
 end
 
-local function present_suggestions(dataset)
-  local ai = dataset.ai or {}
-  local suggestions = ai.suggestions or {}
-
-  if vim.tbl_isempty(suggestions) then
-    if ai.raw and ai.raw ~= "" then
-      vim.notify("[ai_keymap] AI returned no actionable suggestions.", vim.log.levels.INFO)
-    else
-      vim.notify("[ai_keymap] No suggestions available (check log size and API key).", vim.log.levels.WARN)
-    end
-    return
-  end
-
+local function present_suggestions(suggestions)
   local items = {}
   for index, suggestion in ipairs(suggestions) do
     local label = string.format(
-      "%d. [%s] %s → %s",
+      "%d. %sモード '%s' 連打 (平均 %.1f 回, %d 回出現)",
       index,
-      suggestion.mode,
-      suggestion.lhs,
-      table.concat(suggestion.sequence, " ")
+      suggestion.mode_label,
+      suggestion.key,
+      suggestion.average,
+      suggestion.occurrences
     )
     table.insert(items, { label = label, value = suggestion })
   end
 
   vim.ui.select(items, {
-    prompt = "AI Keymap Suggestions",
+    prompt = "検出された繰り返し操作",
     format_item = function(item)
       return item.label
     end,
@@ -162,84 +129,32 @@ function M.run(opts)
 
   local log_path = opts.log_path
   if not log_path or log_path == "" then
-    vim.notify("[ai_keymap] suggestion requires a log path", vim.log.levels.ERROR)
+    vim.notify("[ai_keymap] サジェストにはログパスが必要です", vim.log.levels.ERROR)
     return
   end
 
-  local cmd = vim.deepcopy(opts.cmd or default_cmd)
-  table.insert(cmd, "--log")
-  table.insert(cmd, log_path)
-  table.insert(cmd, "--format")
-  table.insert(cmd, "json")
-
-  local extra = sanitize_args(opts.extra_args)
-  if extra then
-    for _, arg in ipairs(extra) do
-      table.insert(cmd, arg)
-    end
+  local events, err = analysis.load_events(log_path)
+  if not events then
+    vim.notify("[ai_keymap] ログ読み込みに失敗: " .. tostring(err), vim.log.levels.ERROR)
+    return
   end
 
-  local stdout_chunks = {}
-  local stderr_chunks = {}
+  if vim.tbl_isempty(events) then
+    vim.notify("[ai_keymap] ログが空のため提案がありません。まずは `:AiKeymapStart` で入力を収集してください。", vim.log.levels.INFO)
+    return
+  end
 
-  vim.fn.jobstart(cmd, {
-    stdout_buffered = true,
-    stderr_buffered = true,
-    on_stdout = function(_, data)
-      if not data then
-        return
-      end
-      for _, line in ipairs(data) do
-        if line ~= "" then
-          table.insert(stdout_chunks, line)
-        end
-      end
-    end,
-    on_stderr = function(_, data)
-      if not data then
-        return
-      end
-      for _, line in ipairs(data) do
-        if line ~= "" then
-          table.insert(stderr_chunks, line)
-        end
-      end
-    end,
-    on_exit = function(_, code)
-      if code ~= 0 then
-        vim.schedule(function()
-          vim.notify(
-            string.format("[ai_keymap] suggestion CLI exited with code %d\n%s", code, join_chunks(stderr_chunks)),
-            vim.log.levels.ERROR
-          )
-        end)
-        return
-      end
+  local options = opts.options or {}
+  local suggestions = analysis.detect_repeated_movements(events, options)
 
-      local payload = join_chunks(stdout_chunks)
-      if payload == "" then
-        vim.schedule(function()
-          vim.notify("[ai_keymap] suggestion CLI produced empty output", vim.log.levels.ERROR)
-        end)
-        return
-      end
+  if vim.tbl_isempty(suggestions) then
+    vim.notify("[ai_keymap] 連続した移動操作は検出されませんでした。", vim.log.levels.INFO)
+    return
+  end
 
-      local ok, decoded = pcall(vim.json.decode, payload)
-      if not ok then
-        vim.schedule(function()
-          vim.notify("[ai_keymap] failed to decode suggestion JSON: " .. tostring(decoded), vim.log.levels.ERROR)
-        end)
-        return
-      end
-
-      vim.schedule(function()
-        if #stderr_chunks > 0 then
-          vim.notify("[ai_keymap] " .. join_chunks(stderr_chunks), vim.log.levels.WARN)
-        end
-        present_suggestions(decoded)
-      end)
-    end,
-  })
+  present_suggestions(suggestions)
 end
+
+M.parse_args = parse_args
 
 return M

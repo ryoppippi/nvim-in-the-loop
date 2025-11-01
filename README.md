@@ -6,8 +6,8 @@ Human-in-the-loop playground for the talk “AI-Optimised Vim Keybindings: HCI-D
 
 - Capture Neovim keystrokes across modes and persist them as JSONL.
 - `:AiKeymapStart`, `:AiKeymapStop`, `:AiKeymapFlush`, `:AiKeymapStatus` commands for runtime control.
-- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/.config/nvim`), and asks GPT‑5 for conflict‑free keymap proposals.
-- `:AiKeymapSuggest` fetches AI proposals via the same CLI and renders selectable suggestions inside Neovim (press `y` to copy a recommended mapping). It reuses the dotfiles root detected above so collisions are filtered automatically.
+- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/.config/nvim`), andオプションで GPT‑5 による提案も表示します。
+- `:AiKeymapSuggest` は Lua のヒューリスティックで移動キーの連打（例: `jjj`）を検知し、代替案やサンプルマッピングを Neovim 上で提示します（`y` でスニペットをコピー）。
 - Optional `:AiKeymapOpenLog` helper to inspect the raw dataset before sending it to an LLM.
 
 ## Setup
@@ -21,12 +21,7 @@ require("ai_keymap").setup({
   log_path = vim.fn.stdpath("data") .. "/ai_keymap/keystrokes.jsonl",
   visualize_cmd = { "bun", "run", "src/cli.ts" },
   visualize_args = { "--dotfiles", vim.fn.expand("~/.config/nvim") },
-  suggest_args = {
-    "--dotfiles",
-    vim.fn.expand("~/.config/nvim"),
-    "--model",
-    "gpt-5",
-  },
+  suggest_options = { min_repeat = 3, min_occurrence = 2 },
   start_immediately = true,
 })
 ```
@@ -41,8 +36,8 @@ export OPENAI_API_KEY=sk-your-key
 
 1. Launch Neovim and run `:AiKeymapStart`.
 2. Perform editing tasks representative of your audience persona.
-3. Trigger `:AiKeymapVisualize` to open the floating dashboard with aggregated insights.
-4. Run `:AiKeymapSuggest` to pick from GPT‑powered proposals; press `y` to yank the highlighted mapping and iterate live.
+3. Trigger `:AiKeymapVisualize` to open the floating dashboard（必要なら `--skip-ai` を渡して AI を無効化）。
+4. Run `:AiKeymapSuggest` to inspect repeated movements detected heuristically; press `y` to yank the suggested mapping snippet.
 5. Stop capture with `:AiKeymapStop` when done.
 
 ## CLI Usage
@@ -60,9 +55,9 @@ bun run src/cli.ts \
 - Reads `vim.keymap.set` / `noremap` style mappings from the dotfiles you provide.
 - Calls GPT‑5 (via the Vercel AI SDK) to propose non-conflicting shortcuts. Use `--skip-ai` to disable the model.
 - Pass `--format json` for machine-readable output.
-- The Neovim picker (`:AiKeymapSuggest`) runs the CLI with `--format json` under the hood so you can stay in editor.
+- The Neovim picker (`:AiKeymapSuggest`) now relies on Lua heuristics. Analytics-only users can run the CLI separately with `--skip-ai`.
 
-> 💡 Swap to another model by tweaking `suggest_args` (e.g. `--model gpt-4.1`). The CLI forwards all arguments to the Vercel AI SDK.
+> 💡 `:AiKeymapSuggest --min-repeat 4` のように閾値を変更できます。AI 提案が必要な場合は CLI (`bun run src/cli.ts`) で `--skip-ai` を外してください。
 
 ## Build & Distribute
 
