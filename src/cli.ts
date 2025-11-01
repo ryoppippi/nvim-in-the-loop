@@ -21,6 +21,11 @@ type OutputPayload = {
 }
 
 const argv = typeof Bun !== "undefined" && Array.isArray(Bun.argv) ? Bun.argv.slice(2) : process.argv.slice(2)
+const defaultLogPath = () => {
+  const xdgPath = process.env.XDG_DATA_HOME
+  const base = xdgPath && xdgPath.length > 0 ? xdgPath : `${process.env.HOME ?? ""}/.local/share`
+  return `${base}/nvim/ai_keymap/keystrokes.jsonl`
+}
 
 await cli(argv, {
   name: "ai-keymap",
@@ -29,7 +34,7 @@ await cli(argv, {
     log: {
       type: "string",
       description: "Path to keystroke JSONL log",
-      required: true,
+      default: defaultLogPath(),
     },
     dotfiles: {
       type: "string",
