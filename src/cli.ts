@@ -88,6 +88,9 @@ const command = define({
     await ensureLogFile(logPath)
 
     const format = normalizeFormat(values.format as string | undefined)
+    if (format === "human") {
+      console.log(`[ai-keymap] Analyzing log at ${logPath} ...`)
+    }
     const windowSize = (values.window as number | undefined) ?? 5
     const top = (values.top as number | undefined) ?? 6
     const minOccurrences = (values["min-occurrences"] as number | undefined) ?? 2
