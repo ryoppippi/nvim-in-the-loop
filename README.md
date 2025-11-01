@@ -6,7 +6,7 @@ Human-in-the-loop playground for the talk “AI-Optimised Vim Keybindings: HCI-D
 
 - Capture Neovim keystrokes across modes and persist them as JSONL.
 - `:AiKeymapStart`, `:AiKeymapStop`, `:AiKeymapFlush`, `:AiKeymapStatus` commands for runtime control.
-- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/ghq/github.com/ryoppippi/dotfiles`), and asks GPT‑5 for conflict‑free keymap proposals.
+- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/.config/nvim`), and asks GPT‑5 for conflict‑free keymap proposals.
 - `:AiKeymapSuggest` fetches AI proposals via the same CLI and renders selectable suggestions inside Neovim (press `y` to copy a recommended mapping). It reuses the dotfiles root detected above so collisions are filtered automatically.
 - Optional `:AiKeymapOpenLog` helper to inspect the raw dataset before sending it to an LLM.
 
@@ -20,10 +20,10 @@ Human-in-the-loop playground for the talk “AI-Optimised Vim Keybindings: HCI-D
 require("ai_keymap").setup({
   log_path = vim.fn.stdpath("data") .. "/ai_keymap/keystrokes.jsonl",
   visualize_cmd = { "bun", "run", "src/cli.ts" },
-  visualize_args = { "--dotfiles", vim.fn.expand("~/ghq/github.com/ryoppippi/dotfiles") },
+  visualize_args = { "--dotfiles", vim.fn.expand("~/.config/nvim") },
   suggest_args = {
     "--dotfiles",
-    vim.fn.expand("~/ghq/github.com/ryoppippi/dotfiles"),
+    vim.fn.expand("~/.config/nvim"),
     "--model",
     "gpt-5",
   },
@@ -52,7 +52,7 @@ The Bun CLI is shared between the floating window and your terminal:
 ```bash
 bun run src/cli.ts \
   --log ~/.local/share/nvim/ai_keymap/keystrokes.jsonl \
-  --dotfiles ~/ghq/github.com/ryoppippi/dotfiles \
+  --dotfiles ~/.config/nvim \
   --top 8
 ```
 

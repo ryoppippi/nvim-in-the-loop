@@ -3,25 +3,6 @@ local M = {}
 local visualizer = require("ai_keymap.visualizer")
 local suggester = require("ai_keymap.suggest")
 
-local function resolve_default_dotfiles()
-  local candidates = {
-    "/Users/ryoppippi/ghq/github.com/ryoppippi/dotfiles",
-    "~/ghq/github.com/ryoppippi/dotfiles",
-    "~/dotfiles",
-  }
-
-  for _, path in ipairs(candidates) do
-    local expanded = vim.fn.expand(path)
-    if expanded ~= "" and vim.fn.isdirectory(expanded) == 1 then
-      return expanded
-    end
-  end
-
-  return vim.fn.expand("~/.config/nvim")
-end
-
-local default_dotfiles_root = resolve_default_dotfiles()
-
 local defaults = {
   log_path = vim.fn.stdpath("data") .. "/ai_keymap/keystrokes.jsonl",
   max_buffered_events = 200, -- auto flush after this many events
@@ -41,13 +22,8 @@ local defaults = {
   include_buffer_metadata = true,
   notification_level = vim.log.levels.INFO,
   visualize_cmd = nil, -- override default bun command if provided
-  visualize_args = { "--dotfiles", default_dotfiles_root },
-  suggest_args = {
-    "--dotfiles",
-    default_dotfiles_root,
-    "--model",
-    "gpt-5",
-  }, -- default CLI args for AI suggestion run
+  visualize_args = { "--dotfiles", vim.fn.expand("~/.config/nvim") },
+  suggest_args = { "--dotfiles", vim.fn.expand("~/.config/nvim"), "--model", "gpt-5" }, -- default CLI args for AI suggestion run
 }
 
 local config = vim.deepcopy(defaults)

@@ -195,14 +195,7 @@ function emitOutput(payload: OutputPayload) {
 }
 
 async function resolveDotfiles(explicit: string[]): Promise<string[]> {
-  const defaults = [
-    "/Users/ryoppippi/ghq/github.com/ryoppippi/dotfiles",
-    "~/ghq/github.com/ryoppippi/dotfiles",
-    "~/dotfiles",
-    "~/.config/nvim",
-    "~/.vim",
-    "~/.config/chezmoi",
-  ]
+  const defaults = ["~/.config/nvim", "~/dotfiles", "~/.vim", "~/.config/chezmoi"]
   const targets = explicit.length ? explicit : defaults
 
   const resolved: string[] = []
