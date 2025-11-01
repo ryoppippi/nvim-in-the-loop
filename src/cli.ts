@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { cli } from "gunshi"
-import { resolve } from "node:path"
-import { stat } from "node:fs/promises"
+import { cli, define } from "gunshi"
+import { resolve, dirname } from "node:path"
+import { mkdir, stat, writeFile } from "node:fs/promises"
 import { readKeystrokeLog } from "./log.ts"
 import { combineOptions, findFrequentSequences } from "./analyzer.ts"
 import { collectKeymaps } from "./keymaps.ts"
@@ -23,11 +23,16 @@ type OutputPayload = {
 const argv = typeof Bun !== "undefined" && Array.isArray(Bun.argv) ? Bun.argv.slice(2) : process.argv.slice(2)
 const defaultLogPath = () => {
   const xdgPath = process.env.XDG_DATA_HOME
-  const base = xdgPath && xdgPath.length > 0 ? xdgPath : `${process.env.HOME ?? ""}/.local/share`
+  const base =
+    xdgPath && xdgPath.length > 0
+      ? xdgPath
+      : process.env.HOME
+        ? `${process.env.HOME}/.local/share`
+        : "."
   return `${base}/nvim/ai_keymap/keystrokes.jsonl`
 }
 
-await cli(argv, {
+const command = define({
   name: "ai-keymap",
   description: "Generate AI-assisted keymap suggestions backed by keystroke analytics.",
   args: {
@@ -80,6 +85,7 @@ await cli(argv, {
   run: async (ctx) => {
     const values = ctx.values
     const logPath = resolvePath(values.log as string)
+    await ensureLogFile(logPath)
 
     const format = normalizeFormat(values.format as string | undefined)
     const windowSize = (values.window as number | undefined) ?? 5
@@ -127,7 +133,9 @@ await cli(argv, {
       format,
     })
   },
-}).catch((error) => {
+})
+
+await cli(argv, command).catch((error) => {
   console.error(error)
   process.exitCode = 1
 })
@@ -239,4 +247,19 @@ function normalizeFormat(input: string | undefined): OutputFormat {
     return value
   }
   throw new Error(`Unknown format '${input}'`)
+}
+
+async function ensureLogFile(path: string): Promise<void> {
+  const dir = dirname(path)
+  try {
+    await stat(dir)
+  } catch {
+    await mkdir(dir, { recursive: true })
+  }
+
+  try {
+    await stat(path)
+  } catch {
+    await writeFile(path, "")
+  }
 }
