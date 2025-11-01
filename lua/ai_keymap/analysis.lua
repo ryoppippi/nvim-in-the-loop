@@ -36,16 +36,16 @@ function M.load_events(path)
 end
 
 local function build_mapping(mode, lhs, rhs, direction, count)
-  local desc = string.format("%d行%sへ移動", count, direction)
+  local desc = string.format("Move %d lines %s", count, direction)
   return string.format("vim.keymap.set('%s', '%s', '%s', { desc = '%s' })", mode, lhs, rhs, desc)
 end
 
 local default_movement_info = {
   n = {
-    j = { direction = "下", lhs = "<leader>J", min_count = 3 },
-    k = { direction = "上", lhs = "<leader>K", min_count = 3 },
-    h = { direction = "左", lhs = "<leader>H", min_count = 5 },
-    l = { direction = "右", lhs = "<leader>L", min_count = 5 },
+    j = { direction = "down", lhs = "<leader>J", min_count = 3 },
+    k = { direction = "up", lhs = "<leader>K", min_count = 3 },
+    h = { direction = "left", lhs = "<leader>H", min_count = 5 },
+    l = { direction = "right", lhs = "<leader>L", min_count = 5 },
   },
 }
 
@@ -136,13 +136,13 @@ function M.detect_repeated_movements(events, opts)
           mapping_snippet = snippet,
           direction = info.direction,
           min_repeat = min_repeat,
-          title = string.format("%sモード: '%s' 連打が頻発 (平均%.1f回)", mode_label(mode), key, average),
+          title = string.format("%s: repeated '%s' presses (avg %.1f)", mode_label(mode), key, average),
           rationale = string.format(
-            "%sモードで'%s'を%d回以上連続入力する操作が%d回観測されました（最大%d回）。数字カウントや専用マッピングで移動回数を減らすことを検討してください。",
+            "Detected %d occurrences in %s of pressing '%s' consecutively at least %d times (max %d). Consider using a count prefix or mapping to compress the movement.",
+            entry.occurrences,
             mode_label(mode),
             key,
             min_repeat,
-            entry.occurrences,
             entry.max_len
           ),
         })

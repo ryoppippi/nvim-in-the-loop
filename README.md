@@ -6,8 +6,8 @@ Human-in-the-loop playground for the talk “AI-Optimised Vim Keybindings: HCI-D
 
 - Capture Neovim keystrokes across modes and persist them as JSONL.
 - `:AiKeymapStart`, `:AiKeymapStop`, `:AiKeymapFlush`, `:AiKeymapStatus` commands for runtime control.
-- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/.config/nvim`), andオプションで GPT‑5 による提案も表示します。
-- `:AiKeymapSuggest` は Lua のヒューリスティックで移動キーの連打（例: `jjj`）を検知し、代替案やサンプルマッピングを Neovim 上で提示します（`y` でスニペットをコピー）。
+- `:AiKeymapVisualize` streams a Bun CLI that crunches the log, inspects your dotfiles (auto-detected at `~/.config/nvim`), and optionally augments the report with GPT‑5 proposals.
+- `:AiKeymapSuggest` uses Lua heuristics to flag repeated movement keys (e.g. `jjj`) and surfaces alternative mappings directly inside Neovim (`y` copies the snippet).
 - Optional `:AiKeymapOpenLog` helper to inspect the raw dataset before sending it to an LLM.
 
 ## Setup
@@ -36,7 +36,7 @@ export OPENAI_API_KEY=sk-your-key
 
 1. Launch Neovim and run `:AiKeymapStart`.
 2. Perform editing tasks representative of your audience persona.
-3. Trigger `:AiKeymapVisualize` to open the floating dashboard（必要なら `--skip-ai` を渡して AI を無効化）。
+3. Trigger `:AiKeymapVisualize` to open the floating dashboard (add `--skip-ai` to disable GPT calls).
 4. Run `:AiKeymapSuggest` to inspect repeated movements detected heuristically; press `y` to yank the suggested mapping snippet.
 5. Stop capture with `:AiKeymapStop` when done.
 
@@ -57,7 +57,7 @@ bun run src/cli.ts \
 - Pass `--format json` for machine-readable output.
 - The Neovim picker (`:AiKeymapSuggest`) now relies on Lua heuristics. Analytics-only users can run the CLI separately with `--skip-ai`.
 
-> 💡 `:AiKeymapSuggest --min-repeat 4` のように閾値を変更できます。AI 提案が必要な場合は CLI (`bun run src/cli.ts`) で `--skip-ai` を外してください。
+> 💡 Adjust thresholds via `:AiKeymapSuggest --min-repeat 4`. If you need GPT-powered suggestions, run the CLI (`bun run src/cli.ts`) without `--skip-ai`.
 
 ## Build & Distribute
 

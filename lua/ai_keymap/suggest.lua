@@ -54,16 +54,16 @@ local function open_preview(suggestion)
   })
 
   local lines = {
-    string.format("モード: %s", suggestion.mode_label),
-    string.format("キー: '%s' (観測回数: %d, 平均: %.1f 回, 最大: %d 回)", suggestion.key, suggestion.occurrences, suggestion.average, suggestion.max_len),
+    string.format("Mode: %s", suggestion.mode_label),
+    string.format("Key: '%s' (occurrences: %d, average: %.1f, max: %d)", suggestion.key, suggestion.occurrences, suggestion.average, suggestion.max_len),
     "",
-    "推奨アクション:",
-    "  - 数字カウントを活用して移動を短縮",
-    "  - 下記マッピングを検討",
+    "Recommended actions:",
+    "  - Use count prefixes to minimise repeated motions",
+    "  - Consider the following mapping",
     "",
     suggestion.mapping_snippet,
     "",
-    "理由:",
+    "Rationale:",
   }
 
   for line in suggestion.rationale:gmatch("[^\n]+") do
@@ -71,7 +71,7 @@ local function open_preview(suggestion)
   end
 
   table.insert(lines, "")
-  table.insert(lines, "操作: `y` でマッピングをコピー / `q` で閉じる")
+  table.insert(lines, "Controls: press `y` to copy the snippet / `q` to close")
 
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
   vim.api.nvim_buf_set_option(buf, "modifiable", false)
@@ -93,7 +93,7 @@ local function open_preview(suggestion)
     if vim.fn.has("clipboard") == 1 then
       pcall(vim.fn.setreg, "+", snippet)
     end
-    vim.notify("[ai_keymap] マッピングをレジスタへコピーしました", vim.log.levels.INFO)
+    vim.notify("[ai_keymap] Copied mapping to register", vim.log.levels.INFO)
   end, { buffer = buf, nowait = true, silent = true })
 end
 
@@ -101,7 +101,7 @@ local function present_suggestions(suggestions)
   local items = {}
   for index, suggestion in ipairs(suggestions) do
     local label = string.format(
-      "%d. %sモード '%s' 連打 (平均 %.1f 回, %d 回出現)",
+      "%d. %s mode '%s' repeats (avg %.1f, %d occurrences)",
       index,
       suggestion.mode_label,
       suggestion.key,
@@ -112,7 +112,7 @@ local function present_suggestions(suggestions)
   end
 
   vim.ui.select(items, {
-    prompt = "検出された繰り返し操作",
+    prompt = "Detected repeated motions",
     format_item = function(item)
       return item.label
     end,
@@ -129,18 +129,18 @@ function M.run(opts)
 
   local log_path = opts.log_path
   if not log_path or log_path == "" then
-    vim.notify("[ai_keymap] サジェストにはログパスが必要です", vim.log.levels.ERROR)
+    vim.notify("[ai_keymap] Suggestion requires a log path", vim.log.levels.ERROR)
     return
   end
 
   local events, err = analysis.load_events(log_path)
   if not events then
-    vim.notify("[ai_keymap] ログ読み込みに失敗: " .. tostring(err), vim.log.levels.ERROR)
+    vim.notify("[ai_keymap] Failed to read log: " .. tostring(err), vim.log.levels.ERROR)
     return
   end
 
   if vim.tbl_isempty(events) then
-    vim.notify("[ai_keymap] ログが空のため提案がありません。まずは `:AiKeymapStart` で入力を収集してください。", vim.log.levels.INFO)
+    vim.notify("[ai_keymap] No recorded keystrokes yet. Run :AiKeymapStart and perform some edits first.", vim.log.levels.INFO)
     return
   end
 
@@ -148,7 +148,7 @@ function M.run(opts)
   local suggestions = analysis.detect_repeated_movements(events, options)
 
   if vim.tbl_isempty(suggestions) then
-    vim.notify("[ai_keymap] 連続した移動操作は検出されませんでした。", vim.log.levels.INFO)
+    vim.notify("[ai_keymap] No repeated movement patterns detected.", vim.log.levels.INFO)
     return
   end
 
