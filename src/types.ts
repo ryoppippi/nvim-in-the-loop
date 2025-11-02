@@ -8,6 +8,7 @@ export type KeystrokeEvent = {
   bufnr?: number
   filetype?: string
   file?: string
+  command_type?: string
 }
 
 export type SequenceStat = {

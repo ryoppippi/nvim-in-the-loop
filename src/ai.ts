@@ -34,6 +34,8 @@ export async function requestSuggestions({
     system:
       "You are an HCI-focused Neovim mentor who proposes ergonomic keymaps. " +
       "You must output strict JSON. Avoid conflicts with provided keymaps. " +
+      "Focus on repetitive motions (like jjjj, wwww) or complex command sequences. " +
+      "NEVER suggest mappings for simple insert mode text typing. " +
       "Suggest concise leader mappings that compress repetitive keystroke sequences.",
     prompt,
   })
@@ -78,7 +80,16 @@ function buildPrompt(sequences: SequenceStat[], existing: string): string {
     "",
     "Constraints:",
     "- Do not reuse any (mode, lhs) combination listed under existing keymaps.",
-    "- Prefer mappings that compress the entire sequence into a single mnemonic key chord.",
+    "- Prefer SHORTER mappings that are faster to type than the original sequence.",
+    "- For 3-key sequences like 'ciw', suggest a 2-key mapping like '<leader>w' (NOT '<leader>ciw' which is longer!).",
+    "- ONLY suggest mappings for meaningful patterns: repeated motions (jjj, kkk), text object operations (ciw, di\", va(, gcc), or complex command patterns.",
+    "- For Command mode patterns like '%s/\\s+/' or 'g/TODO/d', create shortcuts that execute COMPLETE commands, not partial ones.",
+    "  - Example: sequence ['%','s','/','\\','s','+'] could map to '<leader>ws' that executes ':%s/\\\\s\\\\+//g<Left><Left><Left>' (trim whitespace pattern).",
+    "  - Example: sequence ['g','/','TODO','/','d'] could map to '<leader>td' that executes ':g/TODO/d<CR>' (delete TODO lines).",
+    "- NEVER suggest Insert mode mappings that just type regular text characters.",
+    "- For repeated motions like 'jjjj', teach users to use count prefixes like '4j' instead of creating a mapping.",
+    "- For text object operations, create SHORTER shortcuts (e.g., 'ciw' → '<leader>w' or just 'Q').",
+    "- The 'recommendedMapping' should be the COMPLETE Vim command to execute, ready to use.",
     "- Reference the underlying sequence in your rationale to support HITL review.",
     "- If no safe suggestion exists, return an empty JSON array [].",
   ].join("\n")

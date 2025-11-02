@@ -168,6 +168,20 @@ await cli(argv, command).catch((error) => {
   process.exitCode = 1
 })
 
+function generateLuaKeymap(suggestion: SuggestionResponse["suggestions"][0]): string {
+  const { mode, lhs, sequence, recommendedMapping } = suggestion
+
+  // Use recommendedMapping if provided and meaningful, otherwise fall back to sequence
+  const rhs = recommendedMapping && recommendedMapping.trim() !== ""
+    ? recommendedMapping.trim()
+    : sequence.join("")
+
+  const escapedLhs = lhs.replace(/\\/g, "\\\\").replace(/"/g, '\\"')
+  const escapedRhs = rhs.replace(/\\/g, "\\\\").replace(/"/g, '\\"').replace(/\n/g, "\\n")
+
+  return `vim.keymap.set("${mode}", "${escapedLhs}", "${escapedRhs}", { desc = "AI-suggested: compress ${sequence.join(" → ")}" })`
+}
+
 function emitOutput(payload: OutputPayload) {
   if (payload.format === "json") {
     console.log(
@@ -203,6 +217,8 @@ function emitOutput(payload: OutputPayload) {
         if (suggestion.rationale) {
           console.log(`   rationale: ${suggestion.rationale}`)
         }
+        const luaMapping = generateLuaKeymap(suggestion)
+        console.log(`   lua: ${luaMapping}`)
       })
     } else if (payload.suggestions) {
       console.log("AI Suggestions: none (model returned empty set).")
@@ -252,6 +268,8 @@ function emitOutput(payload: OutputPayload) {
       if (suggestion.rationale) {
         console.log(`   rationale: ${suggestion.rationale}`)
       }
+      const luaMapping = generateLuaKeymap(suggestion)
+      console.log(`   lua: ${luaMapping}`)
     })
   } else if (payload.suggestions) {
     console.log("\nAI Suggestions: none (model returned empty set).")
