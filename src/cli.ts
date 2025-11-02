@@ -37,6 +37,7 @@ const defaultLogPath = () => {
 const command = define({
   name: "ai-keymap",
   description: "Generate AI-assisted keymap suggestions backed by keystroke analytics.",
+  toKebab: true,
   args: {
     log: {
       type: "string",
