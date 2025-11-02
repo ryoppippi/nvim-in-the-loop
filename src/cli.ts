@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { cli, define } from "gunshi"
-import { resolve, dirname } from "node:path"
+import { dirname, resolve } from "node:path"
 import { mkdir, stat, writeFile } from "node:fs/promises"
+import { DEFAULT_MODEL } from "./consts.ts"
 import { readKeystrokeLog } from "./log.ts"
 import { combineOptions, findFrequentSequences } from "./analyzer.ts"
 import { collectKeymaps } from "./keymaps.ts"
@@ -69,7 +70,7 @@ const command = define({
     model: {
       type: "string",
       description: "Model identifier",
-      default: "gpt-4.1",
+      default: DEFAULT_MODEL,
     },
     temperature: {
       type: "number",
@@ -115,7 +116,7 @@ const command = define({
         suggestionResponse = await requestSuggestions({
           sequences,
           existingKeymaps,
-          model: (values.model as string | undefined) ?? "gpt-4.1",
+          model: (values.model as string | undefined) ?? DEFAULT_MODEL,
           temperature: (values.temperature as number | undefined) ?? 0.1,
           topN: top,
         })
