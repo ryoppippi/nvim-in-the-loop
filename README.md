@@ -49,12 +49,16 @@ bun run src/cli.ts \
   --log ~/.local/share/nvim/ai_keymap/keystrokes.jsonl \
   --dotfiles ~/.config/nvim \
   --top 8
+
+# suggestions only
+bun run src/cli.ts --suggestions-only
 ```
 
 - Scans your log for frequent keystroke sequences.
 - Reads `vim.keymap.set` / `noremap` style mappings from the dotfiles you provide.
 - Calls GPT‑5 (via the Vercel AI SDK) to propose non-conflicting shortcuts. Use `--skip-ai` to disable the model.
 - Pass `--format json` for machine-readable output.
+- Use `--suggestions-only` to print only the AI suggestion block while hiding the rest of the report.
 - The Neovim picker (`:AiKeymapSuggest`) now relies on Lua heuristics. Analytics-only users can run the CLI separately with `--skip-ai`.
 
 > 💡 Adjust thresholds via `:AiKeymapSuggest --min-repeat 4`. If you need GPT-powered suggestions, run the CLI (`bun run src/cli.ts`) without `--skip-ai`.

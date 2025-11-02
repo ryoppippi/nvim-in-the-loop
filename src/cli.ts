@@ -19,6 +19,7 @@ type OutputPayload = {
   dotfilesPaths: string[]
   suggestions: SuggestionResponse | null
   format: OutputFormat
+  suggestionsOnly?: boolean
 }
 
 const argv = typeof Bun !== "undefined" && Array.isArray(Bun.argv) ? Bun.argv.slice(2) : process.argv.slice(2)
@@ -82,6 +83,11 @@ const command = define({
       description: "Output format (human|json)",
       default: "human",
     },
+    "suggestions-only": {
+      type: "boolean",
+      description: "Print only AI suggestions in human format",
+      default: false,
+    },
   },
   run: async (ctx) => {
     const values = ctx.values
@@ -135,6 +141,7 @@ const command = define({
       dotfilesPaths,
       suggestions: suggestionResponse,
       format,
+      suggestionsOnly: Boolean(values["suggestions-only"]),
     })
   },
 })
@@ -160,6 +167,31 @@ function emitOutput(payload: OutputPayload) {
         2,
       ),
     )
+    return
+  }
+
+  const suggestionsOnly = Boolean(payload.suggestionsOnly)
+
+  if (suggestionsOnly) {
+    if (payload.suggestions?.suggestions?.length) {
+      payload.suggestions.suggestions.forEach((suggestion, index) => {
+        console.log(
+          `${index + 1}. [${suggestion.mode}] map ${suggestion.lhs} => sequence ${suggestion.sequence.join(
+            " ",
+          )}`,
+        )
+        if (suggestion.recommendedMapping) {
+          console.log(`   recommended mapping: ${suggestion.recommendedMapping}`)
+        }
+        if (suggestion.rationale) {
+          console.log(`   rationale: ${suggestion.rationale}`)
+        }
+      })
+    } else if (payload.suggestions) {
+      console.log("AI Suggestions: none (model returned empty set).")
+    } else {
+      console.log("AI Suggestions: skipped.")
+    }
     return
   }
 
