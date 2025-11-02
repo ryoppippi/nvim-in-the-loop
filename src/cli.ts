@@ -91,46 +91,62 @@ const command = define({
     },
   },
   run: async (ctx) => {
-    const values = ctx.values
-    const logPath = resolvePath(values.log as string)
+    const {
+      log,
+      dotfiles,
+      top,
+      window,
+      minOccurrences,
+      skipAi,
+      model,
+      temperature,
+      format,
+      suggestionsOnly,
+    } = ctx.values
+
+    const logPath = resolvePath(log)
     await ensureLogFile(logPath)
 
-    const format = normalizeFormat(values.format as string | undefined)
-    if (format === "human") {
+    const outputFormat = normalizeFormat(format)
+    if (outputFormat === "human") {
       console.log(`[ai-keymap] Analyzing log at ${logPath} ...`)
     }
-    const windowSize = (values.window as number | undefined) ?? 5
-    const top = (values.top as number | undefined) ?? 6
-    const minOccurrences = (values.minOccurrences as number | undefined) ?? 2
+    const windowSize = window
+    const topN = top
+    const minRepeat = minOccurrences
 
     const events = await readKeystrokeLog(logPath)
     const analyzerOptions = combineOptions({
       windowSize,
       minSequenceLength: 2,
-      minOccurrences,
+      minOccurrences: minRepeat,
     })
-    const sequences = findFrequentSequences(events, analyzerOptions).slice(0, top)
+    const sequences = findFrequentSequences(events, analyzerOptions).slice(0, topN)
 
-    const dotfilesInput = Array.isArray(values.dotfiles) ? (values.dotfiles as string[]) : []
+    const dotfilesInput = Array.isArray(dotfiles)
+      ? dotfiles
+      : dotfiles
+        ? [dotfiles]
+        : []
     const dotfilesPaths = await resolveDotfiles(dotfilesInput)
     const existingKeymaps = dotfilesPaths.length ? await collectKeymaps(dotfilesPaths) : []
 
     let suggestionResponse: SuggestionResponse | null = null
-    const skipAi = Boolean(values.skipAi)
+    const skipAiEnabled = skipAi
 
-    if (!skipAi && process.env.OPENAI_API_KEY) {
+    if (!skipAiEnabled && process.env.OPENAI_API_KEY) {
       try {
         suggestionResponse = await requestSuggestions({
           sequences,
           existingKeymaps,
-          model: (values.model as string | undefined) ?? DEFAULT_MODEL,
-          temperature: (values.temperature as number | undefined) ?? 0.1,
-          topN: top,
+          model: model ?? DEFAULT_MODEL,
+          temperature,
+          topN,
         })
       } catch (error) {
         console.error(`Failed to request GPT suggestions: ${error}`)
       }
-    } else if (!skipAi) {
+    } else if (!skipAiEnabled) {
       console.warn("OPENAI_API_KEY not found. Skipping AI suggestions.")
     }
 
@@ -141,8 +157,8 @@ const command = define({
       keymapCount: existingKeymaps.length,
       dotfilesPaths,
       suggestions: suggestionResponse,
-      format,
-      suggestionsOnly: Boolean(values.suggestionsOnly),
+      format: outputFormat,
+      suggestionsOnly,
     })
   },
 })
