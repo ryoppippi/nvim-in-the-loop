@@ -59,12 +59,12 @@ const command = define({
       description: "Sequence window size",
       default: 5,
     },
-    "min-occurrences": {
+    minOccurrences: {
       type: "number",
       description: "Minimum repeats before considering a sequence",
       default: 2,
     },
-    "skip-ai": {
+    skipAi: {
       type: "boolean",
       description: "Skip GPT suggestions and only print heuristics",
       default: false,
@@ -84,7 +84,7 @@ const command = define({
       description: "Output format (human|json)",
       default: "human",
     },
-    "suggestions-only": {
+    suggestionsOnly: {
       type: "boolean",
       description: "Print only AI suggestions in human format",
       default: false,
@@ -101,7 +101,7 @@ const command = define({
     }
     const windowSize = (values.window as number | undefined) ?? 5
     const top = (values.top as number | undefined) ?? 6
-    const minOccurrences = (values["min-occurrences"] as number | undefined) ?? 2
+    const minOccurrences = (values.minOccurrences as number | undefined) ?? 2
 
     const events = await readKeystrokeLog(logPath)
     const analyzerOptions = combineOptions({
@@ -116,7 +116,7 @@ const command = define({
     const existingKeymaps = dotfilesPaths.length ? await collectKeymaps(dotfilesPaths) : []
 
     let suggestionResponse: SuggestionResponse | null = null
-    const skipAi = Boolean(values["skip-ai"])
+    const skipAi = Boolean(values.skipAi)
 
     if (!skipAi && process.env.OPENAI_API_KEY) {
       try {
@@ -142,7 +142,7 @@ const command = define({
       dotfilesPaths,
       suggestions: suggestionResponse,
       format,
-      suggestionsOnly: Boolean(values["suggestions-only"]),
+      suggestionsOnly: Boolean(values.suggestionsOnly),
     })
   },
 })
