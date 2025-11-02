@@ -12,7 +12,7 @@
  * external dependencies to keep the setup simple.
  */
 
-type Event = {
+type LogEvent = {
   seq: number
   raw: string
   key: string
@@ -89,7 +89,7 @@ Options:
 `)
 }
 
-async function readLog(path: string): Promise<Event[]> {
+async function readLog(path: string): Promise<LogEvent[]> {
   try {
     const file = Bun.file(path)
     if (!(await file.exists())) {
@@ -97,12 +97,12 @@ async function readLog(path: string): Promise<Event[]> {
       process.exit(1)
     }
     const text = await file.text()
-    const events: Event[] = []
+    const events: LogEvent[] = []
     const lines = text.split(/\r?\n/)
     for (const line of lines) {
       if (!line.trim()) continue
       try {
-        const parsed = JSON.parse(line) as Event
+        const parsed = JSON.parse(line) as LogEvent
         events.push(parsed)
       } catch (error) {
         console.warn(`Skipping malformed line: ${line}`)
@@ -123,7 +123,7 @@ type Sequence = {
   firstFile?: string
 }
 
-function analyse(events: Event[], args: CliArgs) {
+function analyse(events: LogEvent[], args: CliArgs) {
   if (events.length === 0) {
     console.log("No keystrokes recorded yet. Start typing to build a dataset!")
     return
@@ -174,7 +174,7 @@ function analyse(events: Event[], args: CliArgs) {
   })
 }
 
-function aggregateByMode(events: Event[]) {
+function aggregateByMode(events: LogEvent[]) {
   const counts = new Map<string, number>()
   for (const event of events) {
     counts.set(event.mode, (counts.get(event.mode) ?? 0) + 1)
@@ -192,7 +192,7 @@ function printModeSummary(counts: Map<string, number>) {
   })
 }
 
-function topSequences(events: Event[], windowSize: number, top: number): Sequence[] {
+function topSequences(events: LogEvent[], windowSize: number, top: number): Sequence[] {
   const totals = new Map<string, Sequence>()
 
   for (let i = 0; i < events.length; i++) {
@@ -257,3 +257,5 @@ async function main() {
 }
 
 await main()
+
+export {}

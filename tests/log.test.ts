@@ -2,7 +2,7 @@ import { describe, expect, it, beforeAll, afterAll } from "bun:test"
 import { unlink } from "node:fs/promises"
 import { readKeystrokeLog } from "../src/log.ts"
 
-const tempFile = `${Bun.cwd}/tmp-log.jsonl`
+const tempFile = `${process.cwd()}/tmp-log.jsonl`
 
 beforeAll(async () => {
   const lines = [

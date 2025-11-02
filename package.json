@@ -7,7 +7,8 @@
     "ai-keymap": "./dist/cli.js"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@typescript/native-preview": "^7.0.0-dev.20251101.1"
   },
   "peerDependencies": {
     "typescript": "^5"
@@ -20,6 +21,7 @@
   "scripts": {
     "dev": "bun run src/cli.ts",
     "build": "bun build src/cli.ts --outdir dist --target node --packages external && chmod +x dist/cli.js",
-    "test": "bun test"
+    "test": "bun test",
+    "typecheck": "tsgo --noEmit"
   }
 }
