@@ -69,7 +69,7 @@ const command = define({
     model: {
       type: "string",
       description: "Model identifier",
-      default: "gpt-5",
+      default: "gpt-4.1",
     },
     temperature: {
       type: "number",
@@ -115,7 +115,7 @@ const command = define({
         suggestionResponse = await requestSuggestions({
           sequences,
           existingKeymaps,
-          model: (values.model as string | undefined) ?? "gpt-5",
+          model: (values.model as string | undefined) ?? "gpt-4.1",
           temperature: (values.temperature as number | undefined) ?? 0.1,
           topN: top,
         })

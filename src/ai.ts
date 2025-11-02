@@ -2,7 +2,7 @@ import { generateText } from "ai"
 import { openai } from "@ai-sdk/openai"
 import { KeymapDefinition, ModelSuggestion, SequenceStat, SuggestionResponse } from "./types.ts"
 
-const DEFAULT_MODEL = "gpt-5"
+const DEFAULT_MODEL = "gpt-4.1"
 
 type SuggestionParams = {
   sequences: SequenceStat[]

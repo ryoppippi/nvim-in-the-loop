@@ -65,11 +65,11 @@ bun run src/cli.ts \
 # produce dist/cli.js with a Node shebang
 bun run build
 
-# (after packaging/publishing) invoke via npx
-npx ai-keymap --log ~/.local/share/nvim/ai_keymap/keystrokes.jsonl --skip-ai
+# (after packaging/publishing) invoke via bunx
+bunx ai-keymap --log ~/.local/share/nvim/ai_keymap/keystrokes.jsonl --skip-ai
 ```
 
-`package.json` exposes the CLI as `ai-keymap`, so once the package is published you can call it directly through `npx`, or run it locally from `dist/cli.js`.
+`package.json` exposes the CLI as `ai-keymap`, so once the package is published you can call it directly through `bunx`, or run it locally from `dist/cli.js`.
 
 ## Logs
 
